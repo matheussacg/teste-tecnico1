@@ -20,7 +20,7 @@
             placeholder="name@email.com" required />
           <div v-if="emailTouched && emailError" class="text-red-500 text-sm absolute -bottom-5">{{ emailError }}</div>
         </div>
-        <div class="mb-14 relative">
+        <div class="mb-12 relative">
           <label for="password" class="block mb-2 text-sm font-medium text-gray-700">Senha</label>
           <input type="password" id="password" v-model="password" @blur="validatePassword"
             :class="{ 'border-red-500': passwordTouched && passwordError }"
@@ -30,11 +30,15 @@
             }}</div>
         </div>
         <button type="submit"
-          class="mt-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Registrar</button>
+          class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Registrar</button>
       </form>
+      <div class="flex items-center justify-center gap-1 mt-1">
+        <p>Já tem conta?</p>
+        <nuxt-link class="text-blue-800" :to="{ path: '/login' }">Clique aqui</nuxt-link>
+      </div>
     </div>
     <Loading v-else />
-    <ToastSuccess v-if="showSuccessToast" @close="showSuccessToast = false" class="fixed bottom-5 right-5" />
+    <ToastSuccess v-if="showSuccessToast" :success-message="successMessage" @close="showSuccessToast = false" class="fixed bottom-5 right-5" />
     <ToastError v-if="showErrorToast" :error-message="errorMessage" @close="showErrorToast = false" class="fixed bottom-5 right-5" />
   </div>
 </template>
@@ -60,6 +64,7 @@ const errorMessage = ref('')
 const nameTouched = ref(false)
 const emailTouched = ref(false)
 const passwordTouched = ref(false)
+const successMessage = ref('')
 
 const validateEmail = () => {
   emailTouched.value = true
@@ -125,6 +130,7 @@ const handleSubmit = async () => {
     const data = await response.json()
 
     showSuccessToast.value = true
+    successMessage.value = 'Usuário cadastrado!'
     setTimeout(() => {
       showSuccessToast.value = false
       name.value = ''

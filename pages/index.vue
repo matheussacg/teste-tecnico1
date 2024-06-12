@@ -1,17 +1,9 @@
 <template>
-  <div>
+  <Sidebar>
     <h1>Marketplace</h1>
-    <button @click="logout">Logout</button>
-  </div>
+  </Sidebar>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const logout = () => {
-  localStorage.removeItem('token')
-  router.push('/login')
-}
+import Sidebar from '@/components/sidebar.vue'
 </script>
