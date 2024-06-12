@@ -1,10 +1,17 @@
 <template>
-    <div>
-      <h1>Marketplace</h1>
-    </div>
-  </template>
-  
-  <script setup>
-  // script setup
-  </script>
-  
+  <div>
+    <h1>Marketplace</h1>
+    <button @click="logout">Logout</button>
+  </div>
+</template>
+
+<script setup>
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const logout = () => {
+  localStorage.removeItem('token')
+  router.push('/login')
+}
+</script>

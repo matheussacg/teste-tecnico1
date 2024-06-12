@@ -1,34 +1,41 @@
 <template>
-  <div class="flex items-center justify-center h-screen bg-gray-500">
-    <div class="w-80">
-      <form @submit.prevent="handleSubmit" class="max-w-sm mx-auto">
-        <div class="mb-5">
-          <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nome</label>
-          <input type="text" id="name" v-model="name"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+  <div class="h-screen bg-blue-100 flex items-center justify-center p-4">
+    <div v-if="!loading"
+      class="max-w-sm mx-auto w-full bg-white shadow-md p-8 rounded-lg flex flex-col items-center justify-center gap-4">
+      <h1 class="text-3xl text-blue-800 mb-4 font-semibold">Crie sua conta!</h1>
+      <form @submit.prevent="handleSubmit" class="w-full">
+        <div class="mb-7 relative">
+          <label for="name" class="block mb-2 text-sm font-medium text-gray-700">Nome</label>
+          <input type="text" id="name" v-model="name" @blur="validateName"
+            :class="{ 'border-red-500': nameTouched && nameError }"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
             placeholder="Digite seu nome" required />
-          <span v-if="nameError" class="text-red-500 text-sm">{{ nameError }}</span>
+          <div v-if="nameTouched && nameError" class="text-red-500 text-sm absolute -bottom-5">{{ nameError }}</div>
         </div>
-        <div class="mb-5">
-          <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">E-mail</label>
-          <input type="email" id="email" v-model="email"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        <div class="mb-7 relative">
+          <label for="email" class="block mb-2 text-sm font-medium text-gray-700">E-mail</label>
+          <input type="email" id="email" v-model="email" @blur="validateEmail"
+            :class="{ 'border-red-500': emailTouched && emailError }"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
             placeholder="name@email.com" required />
-          <span v-if="emailError" class="text-red-500 text-sm">{{ emailError }}</span>
+          <div v-if="emailTouched && emailError" class="text-red-500 text-sm absolute -bottom-5">{{ emailError }}</div>
         </div>
-        <div class="mb-5">
-          <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Senha</label>
-          <input type="password" id="password" v-model="password"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Digite sua senha"
-            required />
-          <span v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</span>
+        <div class="mb-14 relative">
+          <label for="password" class="block mb-2 text-sm font-medium text-gray-700">Senha</label>
+          <input type="password" id="password" v-model="password" @blur="validatePassword"
+            :class="{ 'border-red-500': passwordTouched && passwordError }"
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+            placeholder="Digite sua senha" required />
+          <div v-if="passwordTouched && passwordError" class="text-red-500 text-sm absolute -bottom-10">{{ passwordError
+            }}</div>
         </div>
-
         <button type="submit"
-          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Registrar</button>
+          class="mt-1 text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full px-5 py-2.5 text-center">Registrar</button>
       </form>
     </div>
+    <Loading v-else />
+    <ToastSuccess v-if="showSuccessToast" @close="showSuccessToast = false" class="fixed bottom-5 right-5" />
+    <ToastError v-if="showErrorToast" :error-message="errorMessage" @close="showErrorToast = false" class="fixed bottom-5 right-5" />
   </div>
 </template>
 
@@ -36,16 +43,28 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRuntimeConfig } from '#app'
+import Loading from '@/components/loading.vue'
+import ToastSuccess from '@/components/toast-success.vue'
+import ToastError from '@/components/toast-error.vue'
 
 const router = useRouter()
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const loading = ref(false)
+const showSuccessToast = ref(false)
+const showErrorToast = ref(false)
+const errorMessage = ref('')
 
-const validateEmail = (email) => {
+const nameTouched = ref(false)
+const emailTouched = ref(false)
+const passwordTouched = ref(false)
+
+const validateEmail = () => {
+  emailTouched.value = true
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  return re.test(email)
+  return re.test(email.value)
 }
 
 const nameError = computed(() => {
@@ -53,23 +72,37 @@ const nameError = computed(() => {
 })
 
 const emailError = computed(() => {
-  return validateEmail(email.value) ? '' : 'Formato de email inválido.'
+  return validateEmail() ? '' : 'Formato de email inválido.'
 })
 
-const passwordError = computed(() => {
+const validatePassword = () => {
+  passwordTouched.value = true
   const re = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/
-  return re.test(password.value) ? '' : 'A senha deve conter letras, números e um caractere especial.'
+  return re.test(password.value)
+}
+
+const passwordError = computed(() => {
+  return validatePassword() ? '' : 'A senha deve conter letras, números e caractere especial.'
 })
+
+const validateName = () => {
+  nameTouched.value = true
+}
 
 const config = useRuntimeConfig()
 const API_URL = config.public.apiUrl
 
 const handleSubmit = async () => {
+  validateName()
+  validateEmail()
+  validatePassword()
+
   if (nameError.value || emailError.value || passwordError.value) {
     return
   }
 
   try {
+    loading.value = true
     const response = await fetch(`${API_URL}/register`, {
       method: 'POST',
       headers: {
@@ -83,24 +116,31 @@ const handleSubmit = async () => {
     })
 
     if (!response.ok) {
-      throw new Error('Falha ao registrar')
+      const responseData = await response.json()
+      const error = new Error(responseData.message || 'Erro durante o registro')
+      error.status = response.status
+      throw error
     }
 
     const data = await response.json()
 
-    // Aqui você pode redirecionar ou fazer algo com o resultado do registro
-    console.log('Usuário registrado com sucesso:', data)
-
-    // Limpa os campos após o registro bem-sucedido
-    name.value = ''
-    email.value = ''
-    password.value = ''
-
-    router.push('/')
+    showSuccessToast.value = true
+    setTimeout(() => {
+      showSuccessToast.value = false
+      name.value = ''
+      email.value = ''
+      password.value = ''
+      router.push('/')
+      }, 3000)
 
   } catch (error) {
-    console.error('Erro durante o registro:', error)
-    alert('Erro durante o registro. Tente novamente.')
+    showErrorToast.value = true
+    errorMessage.value = error.message || 'Erro desconhecido'
+    setTimeout(() => {
+      showErrorToast.value = false
+    }, 5000)
+  } finally {
+    loading.value = false
   }
 }
 </script>
