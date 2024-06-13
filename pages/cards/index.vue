@@ -1,23 +1,27 @@
 <template>
     <Sidebar>
         <div v-if="!loading">
-            <h1 class="text-2xl font-bold border-b-2 w-fit">Cartas</h1>
-            <div class="mt-6">
-                <h1 class="text-xl font-semibold">Adicione cartas a sua coleção:</h1>
-                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <div v-for="card in paginatedCards" :key="card.id"
-                        class="bg-white rounded-lg shadow-md p-4 flex flex-col">
-                        <img :src="card.imageUrl" alt="Card Image" class="w-full h-full object-cover rounded-t-lg">
+            <h1 class="text-2xl font-bold border-b-2 w-fit mb-4">Cartas</h1>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-xl font-semibold">Adicione cartas à sua coleção</h1>
+                <input v-model="searchQuery" @input="updatePagination" type="text" placeholder="Buscar por nome"
+                    class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div v-for="card in paginatedCards" :key="card.id"
+                    class="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
+                    <img :src="card.imageUrl" alt="Card Image" class="w-full h-full object-cover">
+                    <div class="p-4 flex-1 flex flex-col justify-between">
                         <button @click="addCard(card.id)"
                             class="mt-2 px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-lg">Adicionar</button>
                     </div>
                 </div>
-                <div class="mt-4 flex justify-center">
-                    <button @click="prevPage" :disabled="page === 1"
-                        class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg">Anterior</button>
-                    <button @click="nextPage" :disabled="!hasNextPage"
-                        class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg">Próximo</button>
-                </div>
+            </div>
+            <div class="mt-4 flex justify-center">
+                <button @click="prevPage" :disabled="page === 1"
+                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Anterior</button>
+                <button @click="nextPage" :disabled="!hasNextPage"
+                    class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">Próximo</button>
             </div>
         </div>
         <Loading v-else />
@@ -27,6 +31,8 @@
             class="fixed bottom-5 right-5" />
     </Sidebar>
 </template>
+
+
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
@@ -44,6 +50,7 @@ const showSuccessToast = ref(false)
 const showErrorToast = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
+const searchQuery = ref('')
 
 const isWindowDefined = () => typeof window !== 'undefined'
 
@@ -87,21 +94,26 @@ const addCard = async (uuid) => {
         })
 
         showSuccessToast.value = true
-        successMessage.value = 'Carta adicionada a sua coleção!'
+        successMessage.value = 'Carta adicionada à sua coleção!'
         setTimeout(() => {
             showSuccessToast.value = false
         }, 3000)
 
     } catch (error) {
-        console.error('Error adding card:', error)
+        showErrorToast.value = true
+        errorMessage.value = error.message || 'Erro ao adicionar a carta'
+        setTimeout(() => {
+            showErrorToast.value = false
+        }, 5000)
     }
 }
 
 const updatePagination = () => {
-    const totalCards = filteredCards.value.length
+    const filtered = filteredCards.value
+    const totalCards = filtered.length
     const startIndex = (page.value - 1) * rpp
     const endIndex = startIndex + rpp
-    paginatedCards.value = filteredCards.value.slice(startIndex, endIndex)
+    paginatedCards.value = filtered.slice(startIndex, endIndex)
     hasNextPage.value = endIndex < totalCards
 
     if (isWindowDefined()) {
@@ -125,7 +137,11 @@ const nextPage = () => {
     }
 }
 
-const filteredCards = computed(() => cards.value)
+const filteredCards = computed(() => {
+    const query = searchQuery.value.toLowerCase()
+    return cards.value.filter(card => card.name.toLowerCase().includes(query))
+})
+
 const paginatedCards = ref([])
 
 onMounted(() => {
@@ -136,11 +152,21 @@ onMounted(() => {
 })
 
 watch(page, updatePagination)
+watch(searchQuery, () => {
+    page.value = 1
+    updatePagination()
+})
 </script>
 
 <style scoped>
 button[disabled] {
     background-color: #e0e0e0;
     cursor: not-allowed;
+}
+input[type="text"] {
+    transition: box-shadow 0.3s ease;
+}
+input[type="text"]:focus {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
 }
 </style>

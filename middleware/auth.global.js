@@ -28,6 +28,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
   function isTokenValid(token) {
     try {
       const decodedToken = jwtDecode(token);
+      console.log(decodedToken);
       const expirationDate = new Date(decodedToken.exp * 1000);
       return expirationDate > new Date();
     } catch (error) {
